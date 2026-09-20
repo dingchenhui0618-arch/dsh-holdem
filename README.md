@@ -7,6 +7,23 @@
 
 ![六人桌界面](docs/table.jpg)
 
+## 关于本仓库
+
+这是 [`bubbleptr/dsh-holdem`](https://github.com/bubbleptr/dsh-holdem) 的**分支**，在上游
+v0.3.0 的基础上继续开发。上游原作是这一切的起点，MIT 许可与版权声明保持原样。
+
+本分支相对上游新增：
+
+| 新增 | 一句话 |
+| --- | --- |
+| 会话区悬浮小窗 | 注册在 `shell.overlay` 的 360×520 小窗，不切 Tab 也能看牌局 |
+| 下注尺度 | 加注按底池倍数给区间，全下变成显式选项，不再「一加注就推光」 |
+| 买入与出局 | 每人 3 次买入，用完真的会出局（原先无限补筹码） |
+| 亮牌与翻牌动效 | 摊牌亮出赢家底牌，公共牌逐张翻入 |
+| 对比度检查 | `pnpm check:contrast`，按 WCAG AA 核对明暗两套调色板 |
+
+下面每节都写明了动机与实现要点，也都各自带单测。
+
 ## 安装
 
 ### 桌面版
@@ -22,11 +39,15 @@
 ### Web
 
 ```sh
-dsh plugin --profile web add dsh-holdem
+dsh plugin --profile web add github:dingchenhui0618-arch/dsh-holdem
 dsh --profile web
 ```
 
-装的是 npm 上的预构建包，不用 clone、不用 build、不用 `allowBuilds`。
+⚠️ **不要装 npm 上的 `dsh-holdem`** —— 那个包属于上游原作者，装到的是上游版本，
+**不含**本分支的新功能。
+
+不需要 clone、不需要手动 build、也不需要 `allowBuilds`：构建只在 `prepack` 里跑
+（发 npm 时用），git 安装不会触发它；而构建产物 `lib/` 已随仓库提交，装下来即可运行。
 
 卸载（把 profile 与 CLI 换成对应的一套）：
 

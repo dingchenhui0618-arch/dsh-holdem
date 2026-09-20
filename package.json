@@ -28,11 +28,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BubblePtr/dsh-holdem.git"
+    "url": "git+https://github.com/dingchenhui0618-arch/dsh-holdem.git"
   },
-  "homepage": "https://github.com/BubblePtr/dsh-holdem",
+  "homepage": "https://github.com/dingchenhui0618-arch/dsh-holdem",
   "bugs": {
-    "url": "https://github.com/BubblePtr/dsh-holdem/issues"
+    "url": "https://github.com/dingchenhui0618-arch/dsh-holdem/issues"
   },
   "dsh": {
     "bundle": {
