@@ -1005,16 +1005,20 @@ function MiniWindow(props) {
 
   const state = snap.state
   const playing = !!(state && state.status && state.status !== 'idle')
-  const meta = playing
+  // A joined session plays on someone else's table; say so instead of leaving
+  // the user wondering why the local table looks untouched.
+  const lan = (state && state.lan) || null
+  const lanTag = lan && lan.joined ? ('局域网 · 座位 ' + (lan.joined.seat + 1)) : ''
+  const meta = (playing
     ? ('第 ' + state.handNo + ' 手 · ' + (STREET[state.street] || state.street))
-    : '未开局'
+    : '未开局') + (lanTag ? ' · ' + lanTag : '')
   // Collapsed pill copy. Once a hand is paid out the pot reads 0, so the
   // result is shown instead of "底池 0".
   const paidOut = (state && state.winners ? state.winners : []).reduce(function (a, w) {
     return a + (w.amount || 0)
   }, 0)
   const pillText = !playing
-    ? '未开局'
+    ? (lanTag || '未开局')
     : (state.status === 'hand-over' && paidOut > 0
         ? ('🏆 ' + (((state.winners || [])[0].names || []).join('、')) + ' ' + fmt(paidOut))
         : ('底池 ' + fmt(state.pot || 0)))

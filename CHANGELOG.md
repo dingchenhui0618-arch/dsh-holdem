@@ -11,6 +11,7 @@
 - 插件更名：`dsh-holdem` → `dsh-poker-night`。包名、`cordis.patch.yml` 里的插件 id、牌局 API 前缀（`/dsh-holdem` → `/dsh-poker-night`）、会话 Cookie 名与 `localStorage` 键、头像数据目录（`$DSH_HOME/dsh-holdem/avatars` → `$DSH_HOME/dsh-poker-night/avatars`，首次运行自动搬运旧文件）都随之改变。升级方式：把 profile 里的旧包移除，再按新名重装。
 
 ### 新增
+- 局域网联机：主机开一个房间（6 位房间号 + UDP 广播发现），同一网络里的其他安装加入后随机顶替一名人机角色；广播不携带房间号，快照按观看者座位生成，离开或掉线 20 秒自动交还座位。默认关闭。
 - 牌桌扩为固定八人：新增雷军（小米）、张一鸣（字节跳动）两位人设，你 + 7 位智能体同桌。
 - 座位环改为按人数计算（`seatAngle`/`seatPos`/`seatIsTop`），椭圆桌坐标不再写死六人；空桌提示与顶部名单从快照生成，不再硬编码「六人桌 · …」。
 - 雷军与张一鸣默认使用标识头像（不随包分发真人肖像），可用「上传覆盖」换成自己的图。

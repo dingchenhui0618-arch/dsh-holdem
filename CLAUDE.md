@@ -28,6 +28,8 @@ pnpm test         # node:test 单测（test/*.test.mjs）：纯逻辑 + 离线�
 
 插件分为两个半区，由 `scripts/build.mjs` 用 esbuild 分别打包：
 
+局域网：`src/lan.js` 是自成一体的联机层——房间号生成/校验、发现广播编解码、随机顶替选座、房间 HTTP 服务（`/lan/join|state|act|leave`）与加入方用的远端客户端。房间服务绑在插件自己的端口上（DSH 的 web 端口只监听回环，客人连不进来），发现走 UDP 广播。两条不许放宽的约束：**广播里不带房间号**（只有被口头告知的人能加入）、**快照按观看者座位生成**（`snapshot(viewerSeat)`，客人只看得到自己的底牌，主机也看不到客人的牌），由 `test/lan.test.mjs` 与 `test/lan-room.test.mjs` 钉住。顶替一名人机就是把该座位 `kind` 改成 `guest`——AI 调度本来就用 `p.kind !== 'ai'` 拦住，所以引擎不需要额外分支；掉线由 `GUEST_TTL_MS` 兜底交还座位并唤醒 AI。
+
 纯逻辑单独成模块并有单测：`src/cards.js`（牌力评估，`eval5`/`evalBest` 等）、`src/pots.js`（边池分层 `makePots`）、`src/bets.js`（下注尺度 `raiseCeiling`/`clampRaise`）、`src/table-rules.js`（买入/出局 `rebuyDecision`、盲注座位 `blindSeats`，含单挑）；`src/client-css.cjs` 是 client 的整段 CSS 字符串。牌局引擎（`createTable` 闭包）刻意保持在 `src/host.js` 内未拆——共享可变状态，拆分需先补更多特征测试；引擎级测试用 `test/harness.mjs` stub 掉 `llm` 服务离线驱动（`test/ai-sizing.test.mjs`、`test/rebuys.test.mjs`），需要确定性时用 `seedRandom(seed)` 替换 `Math.random`。
 
 **Host（`src/host.js` → `lib/index.js`，Node/ESM）**
