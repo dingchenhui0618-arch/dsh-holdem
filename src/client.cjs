@@ -169,6 +169,7 @@ function useStore(intervalMs) {
 
 const CSS = require('./client-css.cjs')
 const { fmt, formatWinnerLines } = require('./format.js')
+const { seatPos, seatIsTop } = require('./seat-ring.js')
 const { raisePresets } = require('./bets.js')
 const { paintIdenticon } = require('./identicon.js')
 
@@ -180,30 +181,8 @@ function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n))
 }
 
-// Seats sit on the rim of the oval, and the ring is derived from the seat count
-// so the table works for any roster size. Seat 0 is the hero at the bottom,
-// seat numbers increase toward the right, and clockwise action runs the other
-// way (see cw() in host.js).
-const RING_X = 44 // horizontal reach; leaves room for the seat width
-const RING_Y = 50
-
-function seatAngle(seat, count) {
-  const n = Math.max(count || 8, 3)
-  return ((90 - (seat * 360) / n) * Math.PI) / 180
-}
-
-function seatPos(seat, count) {
-  const rad = seatAngle(seat, count)
-  return {
-    left: (50 + RING_X * Math.cos(rad)) + '%',
-    top: (50 + RING_Y * Math.sin(rad)) + '%',
-    transform: 'translate(-50%, -50%)',
-  }
-}
-
-function seatIsTop(seat, count) {
-  return Math.sin(seatAngle(seat, count)) < 0
-}
+// Seat-ring geometry (seatPos / seatIsTop) lives in src/seat-ring.js so the
+// overlap and range checks can run as tests instead of by eye.
 
 // The idle header lists whoever is actually seated, so adding or removing a bot
 // never leaves the copy behind.
