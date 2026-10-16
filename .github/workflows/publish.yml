@@ -1,0 +1,41 @@
+name: publish
+
+# Publishes the package with npm Trusted Publishing (OIDC): the workflow mints a
+# short-lived identity token and npm exchanges it for publish rights, so no
+# long-lived token is stored anywhere. npm is moving everyone this way — tokens
+# that bypass 2FA stop working for direct publishing in January 2027.
+#
+# One-time setup, done by the maintainer on npmjs.com (the package name must
+# already belong to the account):
+#   Package → Settings → Trusted Publisher → GitHub Actions
+#     Organization or user: dingchenhui0618-arch
+#     Repository:           dsh-poker-night
+#     Workflow filename:    publish.yml
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token npm exchanges for publish rights
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      # --no-frozen-lockfile on purpose: the lockfile is not regenerated for
+      # metadata-only changes, and a stale lock must not block a release.
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm test
+      - run: npm publish --provenance --access public
