@@ -22,6 +22,9 @@
 - 桌面版下每次轮询都会新建牌桌、POST 恒 401 的问题。
 - 桌面壳保留的 `Referer: dsh-app://app/` 被误判为跨源而 403：现在只有 http(s) 的 Referer 参与同源判断。
 
+### 内部
+- 保留并强化上游署名：README 增加「致谢」段，`LICENSE` 标注上游仓库地址，界面（侧栏与小窗）常驻「基于 dsh-holdem · MIT」。
+
 ### 安全
 - 媒体令牌只授权读取头像（含用户上传的覆盖头像），不能驱动任何动作；POST 仍必须带 `X-CSRF-Token`。见 `test/desktop-transport.test.mjs`。
 

@@ -103,4 +103,5 @@ pnpm test         # node:test 单测（test/*.test.mjs）：纯逻辑 + 离线�
 ## 约定
 
 - 全部游戏内文案（bot 人设、日志、UI 标签、talk 约束）是简体中文；代码注释用英文。
+- 保留上游署名：README「致谢」段、`LICENSE` 的上游版权行、界面侧栏与小窗的「基于 dsh-holdem · MIT」都不得删除。
 - 筹码单位叫 "tokens"（盲注 10000/20000，起始 2000000），是主题梗，不要改成 chips。

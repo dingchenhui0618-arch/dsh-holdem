@@ -5,6 +5,11 @@ const h = React.createElement
 // plugin shows in the host's own chrome (the tab) and at the top of its views go
 // through this namespace so they follow the active host language.
 const NS = 'dsh-poker-night'
+
+// Upstream credit. This fork builds on BubblePtr/dsh-holdem (MIT), and the
+// notice stays visible in the UI instead of living only in the README.
+const CREDIT = '基于 dsh-holdem · MIT'
+const CREDIT_TITLE = '本插件基于 BubblePtr/dsh-holdem（MIT）二次开发'
 const TEXT = {
   zh: { tab: '德州扑克', title: '无限注德州扑克' },
   en: { tab: "Texas Hold'em", title: 'No-Limit Inference' },
@@ -343,6 +348,7 @@ function AvatarPane(props) {
 function Rail(props) {
   const [tab, setTab] = React.useState('timeline')
   return h('aside', { className: 'hk-rail' },
+    h('div', { className: 'hk-credit', title: CREDIT_TITLE }, CREDIT),
     h('div', { className: 'hk-rail-tabs' },
       h('button', {
         type: 'button',
@@ -1061,6 +1067,7 @@ function MiniWindow(props) {
     h('div', { className: 'hk-mini-body' },
       snap.err ? h('div', { className: 'hk-err' }, snap.err) : null,
       body,
+      h('div', { className: 'hk-credit', title: CREDIT_TITLE }, CREDIT),
     ),
     h('div', { className: 'hk-mini-seg' },
       MINI_PANES.map(function (p) {

@@ -5,8 +5,16 @@
 
 智能体只能看见自己的底牌；桌边闲话是中文，不会泄露推理或手牌。
 
-> 本仓库是 [`BubblePtr/dsh-poker-night`](https://github.com/BubblePtr/dsh-poker-night) 的 fork（MIT），
-> 在上游基础上继续开发：局域网联机、更多角色与体验优化。上游的版权与许可声明保留在 `LICENSE`。
+> 本仓库是 [`BubblePtr/dsh-holdem`](https://github.com/BubblePtr/dsh-holdem) 的 fork（MIT），
+> 在上游基础上继续开发：局域网联机、固定八人桌与两位新角色、体验优化。上游的版权与许可声明保留在 `LICENSE`。
+
+## 致谢
+
+牌局引擎、会话隔离、桌面版适配、悬浮小窗、头像机制、亮牌与翻牌动效这些基础能力，来自上游项目
+**[`BubblePtr/dsh-holdem`](https://github.com/BubblePtr/dsh-holdem)**（MIT）——向它的作者与贡献者致谢。
+本 fork 在其之上继续开发：局域网联机、固定八人桌与雷军 / 张一鸣两位角色、以及若干体验优化。
+
+上游的版权声明保留在 [`LICENSE`](LICENSE) 中，界面（侧栏与小窗）也常驻「基于 dsh-holdem · MIT」署名。
 
 ![八人桌界面](docs/table.jpg)
 
