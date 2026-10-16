@@ -128,7 +128,7 @@ export function createTable(ctx, options) {
     timeline: [],
     tlSeq: 0,
     agentModel: '',
-    log: ['Click Start to sit with five agents.'],
+    log: ['点击 Start 入座：你 + ' + BOTS.length + ' 位智能体。'],
   }
   const players = [createPlayer({ id: 'hero', name: 'you', emoji: '🧑', kind: 'human', tag: 'Hero' }, 0)]
   for (let i = 0; i < BOTS.length; i++) {
