@@ -5,6 +5,20 @@ import { MAX_REBUYS, blindSeats, rebuyDecision } from './table-rules.js'
 import { makePots } from './pots.js'
 import { sanitizeTalk, fallbackTalk } from './talk.js'
 import { avatarDataDir, avatarView, decodeAvatar, isPlayerId, loadBundled, loadOverrides, removeOverride, writeOverride } from './avatars.js'
+import {
+  BROADCAST_INTERVAL_MS,
+  DEFAULT_ROOM_PORT,
+  createDiscovery,
+  createRoom,
+  localAddresses,
+  makeRoomCode,
+  normalizeRoomCode,
+  prunePeers,
+  remoteAct,
+  remoteJoin,
+  remoteLeave,
+  remoteState,
+} from './lan.js'
 
 const START_STACK = 2000000
 const SB = 10000
@@ -21,7 +35,11 @@ const SESSION_HEADER = 'x-poker-night-session'
 // Query parameter carrying a session's media token for <img> avatar requests,
 // which cannot attach the session header.
 const MEDIA_PARAM = 't'
-const MUTATING_METHODS = ['start', 'act', 'next-hand', 'reset', 'set-avatar', 'clear-avatar']
+const MUTATING_METHODS = ['start', 'act', 'next-hand', 'reset', 'set-avatar', 'clear-avatar', 'lan']
+// How often a joined session asks the host for a fresh snapshot. The client
+// polls the local plugin (280ms open / 2000ms collapsed), so this only has to
+// stay a little ahead of the open case.
+const LAN_POLL_MS = 500
 
 const BOTS = [
   { id: 'altman', name: 'Altman', emoji: 'A', brand: 'openai', company: 'OpenAI', loose: 0.04, agg: 0.58, bluff: 0.08, tag: 'OpenAI', style: '你是 OpenAI 创始人 Sam Altman。紧凶、爱讲愿景，但牌桌上绝不露底。垃圾牌就弃，强牌价值下注，很少大额诈唬。' },
@@ -228,8 +246,12 @@ export function createTable(ctx, options) {
     }
   }
 
-  function snapshot() {
-    const hero = players[0]
+  // The viewer is the seat whose hole cards this snapshot may reveal. Local
+  // play always views seat 0; a LAN guest views the seat they took over, so one
+  // table can serve several machines without leaking anyone else's cards.
+  function snapshot(viewer) {
+    const viewerSeat = Number.isInteger(viewer) ? viewer : 0
+    const hero = players[viewerSeat] || players[0]
     const legal = legalFor(state.toAct == null ? null : players[state.toAct])
     return {
       status: state.status,
@@ -263,7 +285,7 @@ export function createTable(ctx, options) {
         const isWinner = (state.winners || []).some(function (w) {
           return (w.seats || []).indexOf(p.seat) !== -1
         })
-        const show = p.kind === 'human' || state.revealed || (state.status === 'hand-over' && isWinner && !p.folded)
+        const show = p.seat === viewerSeat || state.revealed || (state.status === 'hand-over' && isWinner && !p.folded)
         return {
           id: p.id,
           name: p.name,
@@ -271,6 +293,7 @@ export function createTable(ctx, options) {
           brand: p.brand || '',
           company: p.company || '',
           kind: p.kind,
+          remote: !!p.remote,
           tag: p.tag,
           seat: p.seat,
           stack: p.stack,
@@ -290,7 +313,7 @@ export function createTable(ctx, options) {
           avatar: avatarView(p.id, overrides, bundled, mediaToken),
           hasCards: p.cards.length === 2,
           cards: show ? p.cards.slice() : [],
-          handName: show && p.cards.length === 2 && (state.revealed || p.kind === 'human') && state.board.length >= 3
+          handName: show && p.cards.length === 2 && (state.revealed || p.seat === viewerSeat) && state.board.length >= 3
             ? evalBest(p.cards.concat(state.board)).name
             : '',
         }
@@ -920,16 +943,21 @@ export function createTable(ctx, options) {
     return snapshot()
   }
 
-  function act(args) {
+  // `seat` lets a LAN guest act for the seat they took over. Local play and the
+  // existing HTTP route keep acting as seat 0.
+  function act(args, seat) {
+    const at = Number.isInteger(seat) ? seat : 0
     const type = args && typeof args.type === 'string' ? args.type : ''
-    if (state.status !== 'playing' || state.toAct !== 0) return snapshot()
-    const p = players[0]
+    if (state.status !== 'playing' || state.toAct !== at) return snapshot(at)
+    const p = players[at]
+    if (!p) return snapshot(at)
+    const who = p.seat === 0 ? 'you' : p.name
     applyAction(p, type, args && args.amount)
-    state.actionLog = (state.actionLog || []).concat([state.street + ': you ' + p.lastAction]).slice(-16)
-    record({ kind: 'action', name: 'you', emoji: p.emoji, playerId: p.id, action: p.lastAction })
+    state.actionLog = (state.actionLog || []).concat([state.street + ': ' + who + ' ' + p.lastAction]).slice(-16)
+    record({ kind: 'action', name: who, emoji: p.emoji, playerId: p.id, action: p.lastAction })
     afterAction()
     scheduleAi()
-    return snapshot()
+    return snapshot(at)
   }
 
   function setAvatar(args) {
@@ -954,6 +982,47 @@ export function createTable(ctx, options) {
     return bundled[id] || null
   }
 
+  // ---- LAN facade: the room module drives the table through these ----
+  function playerCount() {
+    return players.length
+  }
+
+  // Seats a remote player may take over: every bot seat still in the game.
+  function availableSeats() {
+    return players
+      .filter(function (p) { return p.seat > 0 && p.kind === 'ai' && !p.out })
+      .map(function (p) { return p.seat })
+  }
+
+  function claimSeat(seat) {
+    const p = players[seat]
+    if (!p || p.seat === 0 || p.kind === 'guest') return false
+    p.kind = 'guest'
+    p.remote = true
+    // A request for this seat may already be in flight. Its completion guard
+    // (`p.kind !== 'ai'`) drops the answer, so the seat waits for its remote
+    // player instead of betting by itself — nothing else needs cancelling.
+    if (state.toAct === seat) state.thinkEndsAt = 0
+    return true
+  }
+
+  function releaseSeat(seat) {
+    const p = players[seat]
+    if (!p || p.seat === 0 || p.kind !== 'guest') return false
+    p.kind = 'ai'
+    p.remote = false
+    if (state.status === 'playing' && state.toAct === seat) scheduleAi()
+    return true
+  }
+
+  function status() {
+    return state.status
+  }
+
+  function handNo() {
+    return state.handNo
+  }
+
   function dispose() {
     clearAi()
   }
@@ -974,6 +1043,13 @@ export function createTable(ctx, options) {
     clearAvatar: clearAvatar,
     avatarFile: avatarFile,
     dispose: dispose,
+    // LAN surface
+    playerCount: playerCount,
+    availableSeats: availableSeats,
+    claimSeat: claimSeat,
+    releaseSeat: releaseSeat,
+    status: status,
+    handNo: handNo,
   }
 }
 
@@ -1248,6 +1324,11 @@ export function apply(ctx) {
   const sessions = new Map()
 
   function disposeSession(session) {
+    const st = lanState.get(session)
+    if (st) {
+      lanState.delete(session)
+      stopLan(st, true).catch(function () {})
+    }
     if (!session || !session.table || typeof session.table.dispose !== 'function') return
     session.table.dispose()
   }
@@ -1330,6 +1411,170 @@ export function apply(ctx) {
     return headers
   }
 
+  // ---------------------------------------------------------------- LAN mode
+  // A room belongs to one browser session and lives on that session's table.
+  // Guests take over a random bot seat; every snapshot is filtered by the seat
+  // asking for it. Nothing here runs unless the user switches LAN mode on.
+  const lanState = new WeakMap()
+
+  function lanFor(session) {
+    let st = lanState.get(session)
+    if (!st) {
+      st = { room: null, discovery: null, peers: [], timer: null, proxy: null, error: '', addresses: [] }
+      lanState.set(session, st)
+    }
+    return st
+  }
+
+  function lanView(st) {
+    const now = Date.now()
+    st.peers = prunePeers(st.peers, now)
+    const room = st.room ? st.room.info() : null
+    return {
+      enabled: !!room,
+      code: room ? room.code : '',
+      port: room ? room.port : 0,
+      discovery: st.discovery ? (st.discovery.bound ? 'udp' : 'degraded') : '',
+      addresses: st.addresses.slice(),
+      peers: st.peers.map(function (p) {
+        return { name: p.name, host: p.host, port: p.port, players: p.players, status: p.status }
+      }),
+      joined: st.proxy
+        ? { host: st.proxy.host, port: st.proxy.port, seat: st.proxy.seat, name: st.proxy.name }
+        : null,
+      error: st.error || (st.proxy ? st.proxy.error : '') || '',
+    }
+  }
+
+  function withLan(session, snap) {
+    return Object.assign({}, snap, { lan: lanView(lanFor(session)) })
+  }
+
+  // While this session plays on a remote room its local table is parked, so the
+  // client sees the host's game instead.
+  function viewFor(session) {
+    const st = lanState.get(session)
+    if (st && st.proxy && st.proxy.snap) return withLan(session, st.proxy.snap)
+    return withLan(session, session.table.snapshot(0))
+  }
+
+  async function stopLan(st, notifyRemote) {
+    if (st.timer) { clearInterval(st.timer); st.timer = null }
+    if (st.discovery) {
+      const discovery = st.discovery
+      st.discovery = null
+      await discovery.close()
+    }
+    if (st.room) {
+      const room = st.room
+      st.room = null
+      await room.stop()
+    }
+    if (st.proxy) {
+      const proxy = st.proxy
+      st.proxy = null
+      if (notifyRemote !== false) {
+        try { await remoteLeave(proxy.host, proxy.port, proxy.ticket, 1500) } catch (e) {}
+      }
+    }
+    st.peers = []
+    return st
+  }
+
+  async function lanEnable(st, session, args) {
+    if (st.room) return
+    const code = makeRoomCode()
+    const wanted = Number(args && args.port) > 0 ? Number(args.port) : DEFAULT_ROOM_PORT
+    const room = createRoom({
+      table: session.table,
+      name: (args && typeof args.name === 'string' && args.name) || '牌桌',
+      code: code,
+      port: wanted,
+    })
+    try {
+      await room.start()
+    } catch (err) {
+      st.error = '端口 ' + wanted + ' 被占用，换个端口再试'
+      return
+    }
+    st.room = room
+    st.addresses = localAddresses()
+    const discovery = createDiscovery({
+      // Our own broadcasts come back on the loopback address; the room id keeps
+      // them out of the peer list without exposing the room code.
+      selfId: room.info().id,
+      onPeer: function (info, rinfo) {
+        const host = (rinfo && rinfo.address) || ''
+        st.peers = st.peers.filter(function (p) { return !(p.host === host && p.port === info.port) })
+        st.peers.push({
+          name: info.name,
+          host: host,
+          port: info.port,
+          players: info.players,
+          status: info.status,
+          seenAt: Date.now(),
+        })
+      },
+    })
+    st.discovery = discovery
+    // Binding the fixed discovery port fails when a second instance runs on the
+    // same machine; announcing still works, discovery is just degraded.
+    await discovery.bind()
+    const announce = function () {
+      if (!st.room || !st.discovery) return
+      st.discovery.announce(st.room.info())
+    }
+    announce()
+    st.timer = setInterval(announce, BROADCAST_INTERVAL_MS)
+  }
+
+  async function lanJoin(st, args) {
+    const host = String((args && args.host) || '').trim()
+    const port = Number(args && args.port)
+    const code = normalizeRoomCode(args && args.code)
+    if (!host || !Number.isInteger(port) || port <= 0 || !code) {
+      throw new HttpError(400, '需要主机地址、端口和 6 位房间号')
+    }
+    const joined = await remoteJoin(host, port, code, '远程玩家')
+    st.proxy = {
+      host: host,
+      port: port,
+      ticket: joined.ticket,
+      seat: joined.seat,
+      name: (joined.room && joined.room.name) || '远程牌桌',
+      snap: null,
+      error: '',
+    }
+    const poll = async function () {
+      const proxy = st.proxy
+      if (!proxy) return
+      try {
+        const res = await remoteState(proxy.host, proxy.port, proxy.ticket, 3000)
+        proxy.snap = res.state
+        proxy.seat = res.seat
+        proxy.error = ''
+      } catch (err) {
+        proxy.error = '与主机失去联系：' + String((err && err.message) || err)
+      }
+    }
+    await poll()
+    if (st.timer) clearInterval(st.timer)
+    st.timer = setInterval(poll, LAN_POLL_MS)
+  }
+
+  async function lanMethod(session, args) {
+    const st = lanFor(session)
+    const mode = String((args && args.mode) || '')
+    st.error = ''
+    if (mode === 'enable') await lanEnable(st, session, args || {})
+    else if (mode === 'disable') await stopLan(st, true)
+    else if (mode === 'scan') { if (st.room && st.discovery) st.discovery.announce(st.room.info()) }
+    else if (mode === 'join') await lanJoin(st, args || {})
+    else if (mode === 'leave') await stopLan(st, true)
+    else throw new HttpError(400, 'unknown lan mode')
+    return viewFor(session)
+  }
+
   ctx.effect(function () {
     return function () {
       for (const session of sessions.values()) disposeSession(session)
@@ -1380,7 +1625,7 @@ export function apply(ctx) {
               session = createSession(req)
               setCookie = sessionCookie(req, session.id)
             }
-            json(200, session.table.snapshot())
+            json(200, viewFor(session))
             return
           }
           if (req.method !== 'POST') {
@@ -1398,12 +1643,26 @@ export function apply(ctx) {
           validateCsrf(req, session)
           validateOrigin(req)
           const args = await readJson(req, MAX_REQUEST_BYTES)
-          if (method === 'start') json(200, session.table.start())
-          else if (method === 'act') json(200, session.table.act(args || {}))
-          else if (method === 'next-hand') json(200, session.table.nextHand())
-          else if (method === 'reset') json(200, session.table.reset())
-          else if (method === 'set-avatar') json(200, session.table.setAvatar(args || {}))
-          else if (method === 'clear-avatar') json(200, session.table.clearAvatar(args || {}))
+          const body = args || {}
+          const st = lanState.get(session)
+          if (method === 'lan') {
+            json(200, await lanMethod(session, body))
+          } else if (st && st.proxy) {
+            if (method === 'act') {
+              const remote = await remoteAct(st.proxy.host, st.proxy.port, st.proxy.ticket, body)
+              if (remote && remote.state) st.proxy.snap = remote.state
+              json(200, viewFor(session))
+            } else {
+              // The local table is parked while this session plays remotely;
+              // starting or resetting it would be a different game.
+              json(409, { error: '已加入远程牌桌，请先离开再操作本地牌桌' })
+            }
+          } else if (method === 'start') json(200, withLan(session, session.table.start()))
+          else if (method === 'act') json(200, withLan(session, session.table.act(body)))
+          else if (method === 'next-hand') json(200, withLan(session, session.table.nextHand()))
+          else if (method === 'reset') json(200, withLan(session, session.table.reset()))
+          else if (method === 'set-avatar') json(200, withLan(session, session.table.setAvatar(body)))
+          else if (method === 'clear-avatar') json(200, withLan(session, session.table.clearAvatar(body)))
         } catch (err) {
           discardRequest(req)
           if (res.headersSent) {

@@ -49,6 +49,15 @@ module.exports = `
 .hk-brandtext{font-weight:700;line-height:1;letter-spacing:-.02em}
 .hk-credit{margin:2px 0 0;font-size:11px;line-height:1.4;color:var(--hk-muted-fg,#8a8f98);text-align:center}
 .hk-mini .hk-credit{margin-top:4px;font-size:10px}
+.hk-lan{display:flex;flex-direction:column;gap:6px;padding:2px}
+.hk-lan-line{font-size:11.5px;line-height:1.45;color:var(--hk-muted-fg,#8a8f98)}
+.hk-lan-code{font-size:26px;font-weight:700;letter-spacing:.14em;text-align:center;padding:4px 0}
+.hk-lan-peer{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 6px;border:1px solid var(--hk-line,rgba(255,255,255,.16));border-radius:8px;cursor:pointer}
+.hk-lan-peer:hover{border-color:var(--hk-accent,#4c8dff)}
+.hk-lan-peername{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hk-lan-form{display:flex;gap:4px;align-items:center}
+.hk-lan-input{flex:1;min-width:0;background:transparent;border:1px solid var(--hk-line,rgba(255,255,255,.16));border-radius:8px;color:inherit;font:inherit;font-size:11px;padding:3px 6px}
+.hk-lan-btns{display:flex;gap:6px}
 .hk-seat{position:absolute;width:168px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2;overflow:visible}
 .hk-seat.folded{opacity:.4}
 .hk-seat.s0 .hk-status,.hk-seat.top .hk-status{position:absolute;left:50%;top:calc(100% + 8px);bottom:auto;transform:translateX(-50%)}

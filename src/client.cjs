@@ -846,6 +846,7 @@ function usePokerActions() {
       onAct: function (a) { store.call('act', a) },
       onSetAvatar: uploadAvatar,
       onClearAvatar: function (id) { store.call('clear-avatar', { id: id }) },
+      onLan: function (args) { store.call('lan', args) },
     }
   }, [])
 }
@@ -868,9 +869,89 @@ const MINI_KEY = 'dsh-poker-night.mini'
 const MINI_MARGIN = 12
 const MINI_W = 360
 const MINI_H = 520
+// LAN mode sits behind one small button and is off by default: every part of
+// single-machine play works without it.
+function LanPane(props) {
+  const lan = props.lan || {}
+  const [host, setHost] = React.useState('')
+  const [code, setCode] = React.useState('')
+  const send = function (args) { if (!props.busy) props.onLan(args) }
+  const rows = []
+  if (lan.joined) {
+    rows.push(h('div', { key: 'j', className: 'hk-lan-line' },
+      '已加入 ' + lan.joined.host + ':' + lan.joined.port + ' · 你的座位 ' + (lan.joined.seat + 1)))
+    rows.push(h('div', { key: 'b', className: 'hk-lan-btns' },
+      h('button', { key: 'lv', type: 'button', className: 'hk-chipbtn', disabled: props.busy, onClick: function () { send({ mode: 'leave' }) } }, '离开'),
+    ))
+  } else if (lan.enabled) {
+    rows.push(h('div', { key: 'c', className: 'hk-lan-code' }, lan.code))
+    rows.push(h('div', { key: 'h', className: 'hk-lan-line' }, '把房间号告诉同一网络里的人；他们在自己的插件里填你的地址和房间号即可加入'))
+    const addrs = (lan.addresses || []).map(function (a) { return a.address })
+    rows.push(h('div', { key: 'a', className: 'hk-lan-line' },
+      '本机 ' + (addrs.length ? addrs[0] : '未找到地址') + ' · 端口 ' + lan.port))
+    const peers = lan.peers || []
+    rows.push(h('div', { key: 'p', className: 'hk-lan-line' }, peers.length
+      ? '发现 ' + peers.length + ' 张同网络牌桌，点一下填进地址：'
+      : (lan.discovery === 'udp' ? '正在搜索同网络的牌桌…' : '广播发现不可用，请手动填写对方地址')))
+    peers.forEach(function (peer, i) {
+      rows.push(h('div', {
+        key: 'peer' + i,
+        className: 'hk-lan-peer',
+        title: '点一下填进下面的地址栏',
+        onClick: function () { setHost(peer.host + ':' + peer.port) },
+      }, h('span', { className: 'hk-lan-peername' }, peer.name + ' · ' + peer.host + ':' + peer.port)))
+    })
+    rows.push(h('div', { key: 'f', className: 'hk-lan-form' },
+      h('input', {
+        key: 'ah',
+        className: 'hk-lan-input',
+        placeholder: '主机 IP:端口',
+        value: host,
+        onChange: function (e) { setHost(e.target.value) },
+      }),
+      h('input', {
+        key: 'ac',
+        className: 'hk-lan-input',
+        placeholder: '6 位房间号',
+        value: code,
+        onChange: function (e) { setCode(e.target.value) },
+      }),
+      h('button', {
+        key: 'aj',
+        type: 'button',
+        className: 'hk-chipbtn',
+        disabled: props.busy,
+        onClick: function () {
+          const raw = String(host).trim()
+          const at = raw.lastIndexOf(':')
+          const target = at > 0 ? raw.slice(0, at) : raw
+          const targetPort = at > 0 ? Number(raw.slice(at + 1)) : 47811
+          send({ mode: 'join', host: target, port: targetPort, code: code })
+        },
+      }, '加入'),
+    ))
+    rows.push(h('div', { key: 'b', className: 'hk-lan-btns' },
+      h('button', { key: 'sc', type: 'button', className: 'hk-chipbtn', disabled: props.busy, onClick: function () { send({ mode: 'scan' }) } }, '重新搜索'),
+      h('button', { key: 'off', type: 'button', className: 'hk-chipbtn', disabled: props.busy, onClick: function () { send({ mode: 'disable' }) } }, '关闭局域网'),
+    ))
+  } else {
+    rows.push(h('div', { key: 'i', className: 'hk-lan-line' }, '同一网络里的其他 dsh-poker-night 可以加入这张桌，随机顶替一名人机角色。默认关闭，单机玩法完全不受影响。'))
+    rows.push(h('button', {
+      key: 'on',
+      type: 'button',
+      className: 'hk-chipbtn go',
+      disabled: props.busy,
+      onClick: function () { send({ mode: 'enable' }) },
+    }, '开启局域网模式'))
+  }
+  if (lan.error) rows.push(h('div', { key: 'e', className: 'hk-err' }, lan.error))
+  return h('div', { className: 'hk-lan' }, rows)
+}
+
 const MINI_PANES = [
   { id: 'table', label: '牌桌' },
   { id: 'timeline', label: '时间线' },
+  { id: 'lan', label: '局域网' },
   { id: 'avatar', label: '头像' },
 ]
 
@@ -1034,6 +1115,8 @@ function MiniWindow(props) {
     }, actions))
   } else if (pane === 'timeline') {
     body = h(TimelinePane, { items: (state && state.timeline) || [], players: (state && state.players) || [] })
+  } else if (pane === 'lan') {
+    body = h(LanPane, { lan: (state && state.lan) || null, busy: snap.busy, onLan: actions.onLan })
   } else {
     body = h(AvatarPane, Object.assign({
       players: (state && state.players) || [],
