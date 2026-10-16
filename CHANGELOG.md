@@ -6,9 +6,12 @@
 
 ## [Unreleased]
 
+### 不兼容变更
+- 插件更名：`dsh-holdem` → `dsh-poker-night`。包名、`cordis.patch.yml` 里的插件 id、牌局 API 前缀（`/dsh-holdem` → `/dsh-poker-night`）、会话 Cookie 名与 `localStorage` 键、头像数据目录（`$DSH_HOME/dsh-holdem/avatars` → `$DSH_HOME/dsh-poker-night/avatars`，首次运行自动搬运旧文件）都随之改变。升级方式：把 profile 里的旧包移除，再按新名重装。
+
 ### 新增
 - 标题接入宿主语言（`dsh-client-locale`）：Tab、牌桌顶部标题、小窗标题随宿主在英文 / 中文间切换——英文 "Texas Hold'em" / "No-Limit Inference"，中文「德州扑克」/「无限注德州扑克」。
-- 桌面版适配：会话 id 改走 `X-Holdem-Session` 请求/响应头，CSRF 仍走 `X-CSRF-Token`。桌面壳（Electron 主进程）把 `dsh-app://` 请求转发给回环 Host 时会丢弃客户端 Cookie、并扣掉响应里的 `Set-Cookie`，只有自定义请求头能跨过去；web 端保留会话 Cookie 兜底，旧客户端不受影响。
+- 桌面版适配：会话 id 改走 `X-Poker-Night-Session` 请求/响应头，CSRF 仍走 `X-CSRF-Token`。桌面壳（Electron 主进程）把 `dsh-app://` 请求转发给回环 Host 时会丢弃客户端 Cookie、并扣掉响应里的 `Set-Cookie`，只有自定义请求头能跨过去；web 端保留会话 Cookie 兜底，旧客户端不受影响。
 - 头像 URL 带每会话的媒体令牌（`?t=`），`<img>` 在没有 Cookie 的桌面渲染进程里也能加载。
 
 ### 修复
@@ -68,6 +71,6 @@
 
 - 首次发布：六人无限注德州扑克插件，host 引擎 + client Tab。0.1.1 至 0.1.3 为发布当天的打包修补。
 
-[Unreleased]: https://github.com/bubbleptr/dsh-holdem/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/dingchenhui0618-arch/dsh-poker-night/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/bubbleptr/dsh-holdem/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bubbleptr/dsh-holdem/releases/tag/v0.3.0

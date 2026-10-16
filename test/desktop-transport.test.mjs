@@ -71,7 +71,7 @@ async function request(route, options = {}) {
   const body = options.body == null ? '' : options.body
   const req = Readable.from(body ? [Buffer.from(body)] : [])
   req.method = options.method || 'GET'
-  req.url = options.url || '/dsh-holdem'
+  req.url = options.url || '/dsh-poker-night'
   req.headers = Object.assign({ host: '127.0.0.1:19387', referer: 'dsh-app://app/' }, options.headers || {})
   req.socket = { encrypted: false }
   const res = new TestResponse()
@@ -88,26 +88,26 @@ test('desktop proxy shape: the session header resumes a table without cookies', 
 
   const boot = await request(route)
   assert.equal(boot.res.status, 200)
-  const sid = boot.res.headers['x-holdem-session']
+  const sid = boot.res.headers['x-poker-night-session']
   assert.ok(sid, 'the host must return the session id as a header, not only as a cookie')
   const csrf = boot.res.headers['x-csrf-token']
   assert.ok(csrf)
 
   const started = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/start',
-    headers: { 'content-type': 'application/json', 'content-length': '2', 'x-holdem-session': sid, 'x-csrf-token': csrf },
+    url: '/dsh-poker-night/start',
+    headers: { 'content-type': 'application/json', 'content-length': '2', 'x-poker-night-session': sid, 'x-csrf-token': csrf },
     body: '{}',
   })
   assert.equal(started.res.status, 200)
   assert.equal(started.body.handNo, 1)
 
-  const again = await request(route, { headers: { 'x-holdem-session': sid } })
-  assert.equal(again.res.headers['x-holdem-session'], sid)
+  const again = await request(route, { headers: { 'x-poker-night-session': sid } })
+  assert.equal(again.res.headers['x-poker-night-session'], sid)
   assert.equal(again.body.handNo, 1, 'the header must resume the same table')
 
   const other = await request(route)
-  assert.notEqual(other.res.headers['x-holdem-session'], sid)
+  assert.notEqual(other.res.headers['x-poker-night-session'], sid)
   assert.equal(other.body.handNo, 0, 'a fresh browser gets its own table')
 })
 
@@ -125,10 +125,10 @@ test('desktop proxy shape: avatars load through the media token in the URL', asy
   assert.match(image.res.headers['content-type'], /^image\//)
   assert.ok(image.res.body.length > 0)
 
-  const anonymous = await request(route, { url: '/dsh-holdem/avatar/altman?v=0' })
+  const anonymous = await request(route, { url: '/dsh-poker-night/avatar/altman?v=0' })
   assert.equal(anonymous.res.status, 401)
 
-  const forged = await request(route, { url: '/dsh-holdem/avatar/altman?t=not-a-real-token' })
+  const forged = await request(route, { url: '/dsh-poker-night/avatar/altman?t=not-a-real-token' })
   assert.equal(forged.res.status, 401)
 })
 
@@ -143,8 +143,8 @@ test('desktop proxy shape: the media token cannot drive mutations', async (t) =>
 
   const attempt = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/start',
-    headers: { 'content-type': 'application/json', 'content-length': '2', 'x-holdem-session': mediaToken, 'x-csrf-token': csrf },
+    url: '/dsh-poker-night/start',
+    headers: { 'content-type': 'application/json', 'content-length': '2', 'x-poker-night-session': mediaToken, 'x-csrf-token': csrf },
     body: '{}',
   })
   assert.equal(attempt.res.status, 401)
@@ -156,16 +156,16 @@ test('desktop proxy shape: an http(s) cross-origin referer is still rejected', a
   const route = server.route()
 
   const boot = await request(route)
-  const sid = boot.res.headers['x-holdem-session']
+  const sid = boot.res.headers['x-poker-night-session']
   const csrf = boot.res.headers['x-csrf-token']
 
   const hostile = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: {
       'content-type': 'application/json',
       'content-length': '2',
-      'x-holdem-session': sid,
+      'x-poker-night-session': sid,
       'x-csrf-token': csrf,
       referer: 'https://attacker.test/',
     },

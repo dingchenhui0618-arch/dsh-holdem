@@ -13,11 +13,11 @@ const MAX_REQUEST_BYTES = 4 * 1024 * 1024
 const REQUEST_BODY_TIMEOUT_MS = 15 * 1000
 const MAX_SESSIONS = 32
 const SESSION_TTL_MS = 30 * 60 * 1000
-const SESSION_COOKIE = 'dsh_holdem_sid'
+const SESSION_COOKIE = 'dsh_poker_night_sid'
 // The desktop shell strips request cookies and withholds Set-Cookie while it
 // proxies dsh-app:// traffic to the loopback Host, so the session id travels
 // as a plain header in both directions. The cookie stays for the web surface.
-const SESSION_HEADER = 'x-holdem-session'
+const SESSION_HEADER = 'x-poker-night-session'
 // Query parameter carrying a session's media token for <img> avatar requests,
 // which cannot attach the session header.
 const MEDIA_PARAM = 't'
@@ -1120,7 +1120,7 @@ function sendBytes(res, mime, bytes, extraHeaders) {
 
 function methodFromUrl(url) {
   const path = String(url || '').split('?')[0]
-  const rest = path.replace(/^\/dsh-holdem\/?/, '')
+  const rest = path.replace(/^\/dsh-poker-night\/?/, '')
   return rest || 'get-state'
 }
 
@@ -1164,7 +1164,7 @@ function requestIsSecure(req) {
 function sessionCookie(req, id) {
   const parts = [
     SESSION_COOKIE + '=' + id,
-    'Path=/dsh-holdem',
+    'Path=/dsh-poker-night',
     'HttpOnly',
     'SameSite=Strict',
     'Max-Age=' + Math.floor(SESSION_TTL_MS / 1000),
@@ -1239,7 +1239,7 @@ function errorStatus(err) {
   return 500
 }
 
-export const name = 'dsh-holdem'
+export const name = 'dsh-poker-night'
 export const inject = ['timer', 'webServer']
 
 export function apply(ctx) {
@@ -1338,7 +1338,7 @@ export function apply(ctx) {
   ctx.effect(function () {
     return ctx.webServer.register({
       kind: 'prefix',
-      path: '/dsh-holdem',
+      path: '/dsh-poker-night',
       handler: async function (req, res) {
         const method = methodFromUrl(req.url)
         let session = null

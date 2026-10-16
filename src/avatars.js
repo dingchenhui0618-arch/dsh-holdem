@@ -14,7 +14,18 @@ export function isPlayerId(id) {
 
 export function avatarDataDir() {
   const home = process.env.DSH_HOME || join(homedir(), '.dsh')
-  return join(home, 'dsh-holdem', 'avatars')
+  const dir = join(home, 'dsh-poker-night', 'avatars')
+  const legacy = join(home, 'dsh-holdem', 'avatars')
+  // 改名一次性搬运：旧目录里是用户上传过的覆盖头像，不能因为换名字就丢。
+  if (!existsSync(dir) && existsSync(legacy)) {
+    try {
+      mkdirSync(dir, { recursive: true })
+      cpSync(legacy, dir, { recursive: true })
+    } catch (e) {
+      return legacy
+    }
+  }
+  return dir
 }
 
 export function bundledAvatarDir() {
@@ -117,7 +128,7 @@ export function loadBundled(dir) {
 // (whose cookie jar belongs to the shell, not to this plugin) can still fetch
 // the bitmap, while the token stays unguessable and out of the CSRF path.
 function avatarSrc(id, rev, mediaToken) {
-  return '/dsh-holdem/avatar/' + id + '?v=' + rev + (mediaToken ? '&t=' + encodeURIComponent(mediaToken) : '')
+  return '/dsh-poker-night/avatar/' + id + '?v=' + rev + (mediaToken ? '&t=' + encodeURIComponent(mediaToken) : '')
 }
 
 export function avatarView(id, overrides, bundled, mediaToken) {

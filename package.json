@@ -1,7 +1,7 @@
 {
-  "name": "dsh-holdem",
-  "version": "0.4.0",
-  "description": "Six-max No-Limit Hold'em for DeepSeek Harness: one human and five LLM agents.",
+  "name": "dsh-poker-night",
+  "version": "0.5.0",
+  "description": "No-Limit Hold'em night table for DeepSeek Harness: one human, LLM founders, and LAN friends.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -28,11 +28,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BubblePtr/dsh-holdem.git"
+    "url": "git+https://github.com/dingchenhui0618-arch/dsh-poker-night.git"
   },
-  "homepage": "https://github.com/BubblePtr/dsh-holdem",
+  "homepage": "https://github.com/dingchenhui0618-arch/dsh-poker-night",
   "bugs": {
-    "url": "https://github.com/BubblePtr/dsh-holdem/issues"
+    "url": "https://github.com/dingchenhui0618-arch/dsh-poker-night/issues"
   },
   "dsh": {
     "bundle": {
@@ -53,7 +53,9 @@
     "dsh",
     "dsh-plugin",
     "texas-holdem",
-    "poker"
+    "poker",
+    "multiplayer",
+    "lan"
   ],
   "license": "MIT",
   "devDependencies": {

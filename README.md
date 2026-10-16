@@ -1,9 +1,12 @@
-# dsh-holdem
+# dsh-poker-night
 
-无限注德州扑克：**1 名玩家 + 5 位 LLM 智能体**。装上后，Web GUI 中间栏会出现「德州扑克」Tab，
+无限注德州扑克：**1 名玩家 + LLM 智能体**。装上后，Web GUI 中间栏会出现「德州扑克」Tab，
 会话区域还会浮着一个可拖动、可收起的小窗。
 
 智能体只能看见自己的底牌；桌边闲话是中文，不会泄露推理或手牌。
+
+> 本仓库是 [`BubblePtr/dsh-poker-night`](https://github.com/BubblePtr/dsh-poker-night) 的 fork（MIT），
+> 在上游基础上继续开发：局域网联机、更多角色与体验优化。上游的版权与许可声明保留在 `LICENSE`。
 
 ![六人桌界面](docs/table.jpg)
 
@@ -14,7 +17,7 @@
 桌面版（DeepSeek Harness.app）自带一套 dsh CLI，装到它自己的 `desktop` profile：
 
 ```sh
-"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add dsh-holdem
+"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add dsh-poker-night
 ```
 
 装完桌面版会热重载 profile 并把新的客户端模块推给页面，通常不用重启；如果「德州扑克」Tab 没出现，退出重开桌面版。
@@ -22,7 +25,7 @@
 ### Web
 
 ```sh
-dsh plugin --profile web add dsh-holdem
+dsh plugin --profile web add dsh-poker-night
 dsh --profile web
 ```
 
@@ -31,7 +34,7 @@ dsh --profile web
 卸载（把 profile 与 CLI 换成对应的一套）：
 
 ```sh
-dsh plugin --profile web remove dsh-holdem
+dsh plugin --profile web remove dsh-poker-night
 ```
 
 ## 开发
@@ -43,7 +46,7 @@ pnpm build
 
 | 文件 | 作用 |
 | --- | --- |
-| `src/host.js` | Node 半区：牌局引擎 + `/dsh-holdem/*` JSON API；缺模型时回退启发式机器人 |
+| `src/host.js` | Node 半区：牌局引擎 + `/dsh-poker-night/*` JSON API；缺模型时回退启发式机器人 |
 | `src/client.cjs` | 浏览器半区：`conversation.view` Tab + `shell.overlay` 悬浮小窗 |
 | `cordis.patch.yml` | 往 web 组合插入本包 |
 
@@ -103,7 +106,7 @@ key 就变，React 挂载新节点，动画才会重播；若把 key 改回下�
 
 - 拖标题栏移动；越界会被夹回可见区域，折叠状态的药丸同样可拖。
 - 双击标题栏或点右上角 `—` 收起成药丸，单击药丸展开。位置、折叠态与当前分页
-  都存在 `localStorage` 的 `dsh-holdem.mini` 里。
+  都存在 `localStorage` 的 `dsh-poker-night.mini` 里。
 - 小窗内用「牌桌 / 时间线 / 头像」三个分页切换。小窗里的牌桌**不是**把大桌按比例缩小：
   360px 宽下座位、气泡、Winner 横幅会全部叠在一起，所以它改成分区布局——顶部是公共牌 +
   底池 + 你的底牌（摊牌后换成本手结果），中间每位玩家一行（庄/盲注标记、筹码、本手下注、
@@ -141,14 +144,14 @@ pnpm check:contrast
 桌面版是同一个 web 组合：`pnpm build` 后客户端 bundle 由 HMR 推送，插件配置变化宿主会热重载；两者都没生效时再退出重开桌面版。把它指向本仓库：
 
 ```sh
-"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add /Users/void/code/dsh-holdem
+"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add /Users/void/code/dsh-poker-night
 ```
 
 `lib/` 是提交进 git 的构建产物：改完 `src/` 一定要 `pnpm build`，否则运行的是旧代码。
 
 ## API 安全
 
-首次 GET `/dsh-holdem` 签发的会话 id 走 `X-Holdem-Session` 响应头，CSRF 令牌走 `X-CSRF-Token` 响应头；客户端把两者存在 `localStorage` 并随请求回传。web 端同时保留 `HttpOnly`、`SameSite=Strict` 的会话 Cookie，旧客户端仍可只靠 Cookie 建会话（请求头优先于 Cookie）。不同浏览器各自拥有独立牌桌，牌面不会在会话之间共享。
+首次 GET `/dsh-poker-night` 签发的会话 id 走 `X-Holdem-Session` 响应头，CSRF 令牌走 `X-CSRF-Token` 响应头；客户端把两者存在 `localStorage` 并随请求回传。web 端同时保留 `HttpOnly`、`SameSite=Strict` 的会话 Cookie，旧客户端仍可只靠 Cookie 建会话（请求头优先于 Cookie）。不同浏览器各自拥有独立牌桌，牌面不会在会话之间共享。
 
 之所以不以 Cookie 为准：桌面版把 `dsh-app://` 请求转发给回环 Host 时会**丢弃客户端 Cookie、并扣掉响应里的 `Set-Cookie`**，只有自定义请求头能跨过去。头像走 `<img src>`、带不了请求头，所以它的 URL 里带一个独立的媒体令牌（`?t=`）；该令牌只授权读头像，不能驱动任何动作。
 

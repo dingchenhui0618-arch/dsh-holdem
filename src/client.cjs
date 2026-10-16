@@ -4,7 +4,7 @@ const h = React.createElement
 // The host ships English and Chinese and switches between them live. Titles the
 // plugin shows in the host's own chrome (the tab) and at the top of its views go
 // through this namespace so they follow the active host language.
-const NS = 'dsh-holdem'
+const NS = 'dsh-poker-night'
 const TEXT = {
   zh: { tab: '德州扑克', title: '无限注德州扑克' },
   en: { tab: "Texas Hold'em", title: 'No-Limit Inference' },
@@ -19,12 +19,12 @@ function tr(t, key, fallback) {
   return typeof text === 'string' && text !== key ? text : fallback
 }
 
-const API = '/dsh-holdem'
+const API = '/dsh-poker-night'
 // The desktop shell proxies dsh-app:// requests to the loopback Host with a
 // cookie jar of its own, so this client identifies its table with an explicit
 // token instead of relying on Set-Cookie. Web keeps the identical path; the
 // host still accepts the session cookie as a fallback for older clients.
-const SESSION_KEY = 'dsh-holdem.session'
+const SESSION_KEY = 'dsh-poker-night.session'
 let csrfToken = ''
 let sessionToken = storedSession()
 
@@ -48,14 +48,14 @@ function rpc(method, args) {
   const headers = isGet
     ? {}
     : { 'content-type': 'application/json', 'x-csrf-token': csrfToken }
-  if (sessionToken) headers['x-holdem-session'] = sessionToken
+  if (sessionToken) headers['x-poker-night-session'] = sessionToken
   return fetch(API + '/' + method, {
     method: isGet ? 'GET' : 'POST',
     credentials: 'same-origin',
     headers: headers,
     body: isGet ? undefined : JSON.stringify(args || {}),
   }).then(function (res) {
-    rememberSession(res.headers.get('x-holdem-session'))
+    rememberSession(res.headers.get('x-poker-night-session'))
     const nextToken = res.headers.get('x-csrf-token')
     if (nextToken) csrfToken = nextToken
     else if (res.status === 401 || res.status === 403) csrfToken = ''
@@ -88,7 +88,7 @@ function createStore() {
       try { fn(snap) } catch (e) {
         // One bad listener must not stop the poll, but swallowing this silently
         // hides real wiring bugs (e.g. iterating a Map's values by mistake).
-        if (typeof console !== 'undefined' && console.warn) console.warn('[dsh-holdem] listener failed', e)
+        if (typeof console !== 'undefined' && console.warn) console.warn('[dsh-poker-night] listener failed', e)
       }
     })
   }
@@ -835,7 +835,7 @@ function PokerView(props) {
   )
 }
 
-const MINI_KEY = 'dsh-holdem.mini'
+const MINI_KEY = 'dsh-poker-night.mini'
 const MINI_MARGIN = 12
 const MINI_W = 360
 const MINI_H = 520
@@ -847,7 +847,8 @@ const MINI_PANES = [
 
 function readMiniPrefs() {
   try {
-    const raw = window.localStorage.getItem(MINI_KEY)
+    // 改名前的偏好继续生效，小窗位置不会因为换名字而重置。
+    const raw = window.localStorage.getItem(MINI_KEY) || window.localStorage.getItem('dsh-holdem.mini')
     const parsed = raw ? JSON.parse(raw) : null
     return parsed && typeof parsed === 'object' ? parsed : {}
   } catch (e) {
@@ -1054,11 +1055,11 @@ function MiniWindow(props) {
 function apply(ctx) {
   ctx.effect(function () {
     return ctx.locale.register(NS, TEXT)
-  }, 'dsh-holdem: dictionaries')
+  }, 'dsh-poker-night: dictionaries')
   const t = ctx.locale.bind(NS)
   ctx.effect(function () {
     const style = document.createElement('style')
-    style.dataset.plugin = 'dsh-holdem'
+    style.dataset.plugin = 'dsh-poker-night'
     style.textContent = CSS
     document.head.appendChild(style)
     return function () { style.remove() }
@@ -1082,7 +1083,7 @@ function apply(ctx) {
 }
 
 module.exports = {
-  name: 'dsh-holdem',
+  name: 'dsh-poker-night',
   inject: ['slots', 'locale'],
   apply: apply,
 }

@@ -65,7 +65,7 @@ async function request(route, options = {}) {
   const body = options.body == null ? '' : options.body
   const req = Readable.from(body ? [Buffer.from(body)] : [])
   req.method = options.method || 'GET'
-  req.url = options.url || '/dsh-holdem'
+  req.url = options.url || '/dsh-poker-night'
   req.headers = Object.assign({ host: 'holdem.test' }, options.headers || {})
   req.socket = { encrypted: false }
   const res = new TestResponse()
@@ -104,7 +104,7 @@ test('HTTP sessions isolate tables and issue CSRF-protected cookies', async (t) 
   assert.equal(first.res.status, 200)
   assert.match(first.res.headers['set-cookie'][0], /HttpOnly/)
   assert.match(first.res.headers['set-cookie'][0], /SameSite=Strict/)
-  assert.match(first.res.headers['set-cookie'][0], /Path=\/dsh-holdem/)
+  assert.match(first.res.headers['set-cookie'][0], /Path=\/dsh-poker-night/)
   assert.ok(firstSession.csrf)
 
   const second = await request(route)
@@ -112,7 +112,7 @@ test('HTTP sessions isolate tables and issue CSRF-protected cookies', async (t) 
   assert.equal(second.body.handNo, 0)
   const started = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/start',
+    url: '/dsh-poker-night/start',
     headers: postHeaders(firstSession),
     body: '{}',
   })
@@ -138,7 +138,7 @@ test('mutations reject missing session, CSRF, wrong origin, and wrong content ty
 
   const missingSession = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: { 'content-type': 'application/json', 'content-length': '2', origin: 'http://holdem.test' },
     body: '{}',
   })
@@ -146,7 +146,7 @@ test('mutations reject missing session, CSRF, wrong origin, and wrong content ty
 
   const missingCsrf = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: postHeaders(session, { 'x-csrf-token': '' }),
     body: '{}',
   })
@@ -154,7 +154,7 @@ test('mutations reject missing session, CSRF, wrong origin, and wrong content ty
 
   const wrongOrigin = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: postHeaders(session, { origin: 'https://attacker.test' }),
     body: '{}',
   })
@@ -162,7 +162,7 @@ test('mutations reject missing session, CSRF, wrong origin, and wrong content ty
 
   const wrongContentType = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: postHeaders(session, { 'content-type': 'text/plain' }),
     body: '{}',
   })
@@ -178,7 +178,7 @@ test('request bodies are bounded before and during streaming', async (t) => {
 
   const declaredTooLarge = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: postHeaders(session, { 'content-length': String(4 * 1024 * 1024 + 1) }),
     body: '{}',
   })
@@ -186,7 +186,7 @@ test('request bodies are bounded before and during streaming', async (t) => {
 
   const streamedTooLarge = await request(route, {
     method: 'POST',
-    url: '/dsh-holdem/reset',
+    url: '/dsh-poker-night/reset',
     headers: postHeaders(session, { 'content-length': '' }),
     body: 'x'.repeat(4 * 1024 * 1024 + 1),
   })

@@ -161,10 +161,10 @@ export const botActions = (snap) => snap.log.filter((l) => ACTION.test(l) && !/^
 // session cookie and CSRF token before the first mutation.
 export const post = async (h, method, args) => {
   if (!h.session.cookie) await state(h)
-  return call(h.handler, 'POST', '/dsh-holdem/' + method, args ? JSON.stringify(args) : '', h.session)
+  return call(h.handler, 'POST', '/dsh-poker-night/' + method, args ? JSON.stringify(args) : '', h.session)
 }
 
-export const state = (h) => call(h.handler, 'GET', '/dsh-holdem', '', h.session)
+export const state = (h) => call(h.handler, 'GET', '/dsh-poker-night', '', h.session)
 
 // Deterministic Math.random replacement (mulberry32): shuffle() and the dealer
 // pick both draw from it, so a seeded table is fully reproducible. Assign it in
