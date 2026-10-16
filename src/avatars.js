@@ -3,8 +3,8 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const PLAYER_IDS = ['hero', 'altman', 'dario', 'musk', 'liang', 'jensen']
-export const AGENT_IDS = ['altman', 'dario', 'musk', 'liang', 'jensen']
+export const PLAYER_IDS = ['hero', 'altman', 'dario', 'musk', 'liang', 'jensen', 'leijun', 'yiming']
+export const AGENT_IDS = ['altman', 'dario', 'musk', 'liang', 'jensen', 'leijun', 'yiming']
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 const BUNDLED_EXTS = ['.jpg', '.jpeg', '.png', '.webp']
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-dsh-poker-night 是 DeepSeek Harness (dsh) 的插件：六人无限注德州扑克，1 名人类玩家（seat 0）对 5 个 LLM 智能体（AI 公司创始人人设）。安装后在 dsh Web GUI 的 `conversation.view` 中出现「德州扑克」Tab。
+dsh-poker-night 是 DeepSeek Harness (dsh) 的插件：八人无限注德州扑克，1 名人类玩家（seat 0）对 7 个 LLM 智能体（AI 公司创始人人设）。安装后在 dsh Web GUI 的 `conversation.view` 中出现「德州扑克」Tab。
 
 ## 常用命令
 

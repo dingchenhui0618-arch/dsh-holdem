@@ -76,10 +76,11 @@ test('bots run out of bullets, sit out, and never take a seat again', async () =
 test('the human runs out of bullets and the table ends until Reset', async () => {
   // Every bot calls, the human shoves. An unseeded table is a coin flip per
   // hand (the human usually busts first, but sometimes wins the whole table),
-  // so seed the shuffle: seed 4 busts the human on all four bullets within four
-  // hands, which makes this a deterministic check of the human-specific ending.
+  // so seed the shuffle: seed 1 busts the human on all four bullets within four
+  // hands on the eight-handed table, which makes this a deterministic check of
+  // the human-specific ending.
   const real = Math.random
-  Math.random = seedRandom(4)
+  Math.random = seedRandom(1)
   const h = harness({ type: 'call', talk: '跟' })
   try {
     let snap = await post(h, 'start')
@@ -130,10 +131,10 @@ test('budgets are visible in the snapshot and the log names the buyer', async ()
   try {
     let snap = await post(h, 'start')
     assert.ok(snap.players.every((p) => p.rebuys === 0 && !p.out))
-    // A fresh table holds exactly six starting stacks, blinds included.
+    // A fresh table holds one starting stack per seat, blinds included.
     assert.equal(
       snap.players.reduce((s, p) => s + p.stack + p.committed, 0),
-      6 * 2000000,
+      snap.players.length * 2000000,
       'chips must be conserved while dealing',
     )
     const seen = []

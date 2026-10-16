@@ -1,6 +1,6 @@
 # dsh-poker-night
 
-无限注德州扑克：**1 名玩家 + LLM 智能体**。装上后，Web GUI 中间栏会出现「德州扑克」Tab，
+无限注德州扑克：**1 名玩家 + 7 位 LLM 智能体**（Altman、达里奥、马斯克、梁文峰、黄仁勋、雷军、张一鸣），固定八人桌。装上后，Web GUI 中间栏会出现「德州扑克」Tab，
 会话区域还会浮着一个可拖动、可收起的小窗。
 
 智能体只能看见自己的底牌；桌边闲话是中文，不会泄露推理或手牌。
@@ -8,7 +8,7 @@
 > 本仓库是 [`BubblePtr/dsh-poker-night`](https://github.com/BubblePtr/dsh-poker-night) 的 fork（MIT），
 > 在上游基础上继续开发：局域网联机、更多角色与体验优化。上游的版权与许可声明保留在 `LICENSE`。
 
-![六人桌界面](docs/table.jpg)
+![八人桌界面](docs/table.jpg)
 
 ## 安装
 

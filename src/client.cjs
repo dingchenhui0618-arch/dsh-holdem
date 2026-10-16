@@ -175,30 +175,40 @@ function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n))
 }
 
-const TABLE_ASPECT = 2.15
+// Seats sit on the rim of the oval, and the ring is derived from the seat count
+// so the table works for any roster size. Seat 0 is the hero at the bottom,
+// seat numbers increase toward the right, and clockwise action runs the other
+// way (see cw() in host.js).
+const RING_X = 44 // horizontal reach; leaves room for the seat width
+const RING_Y = 50
 
-function seatPos(seat) {
-  const rx = 50 / TABLE_ASPECT
-  // Hero at bottom; numbers increase toward the right. Clockwise action is
-  // the other way (see cw() in host.js).
-  if (seat === 0) return { left: '50%', top: '100%', transform: 'translate(-50%, -50%)' }
-  if (seat === 3) return { left: '50%', top: '0%', transform: 'translate(-50%, -50%)' }
-  const spec = {
-    1: { cx: 100 - rx, ang: 38 },
-    2: { cx: 100 - rx, ang: -38 },
-    4: { cx: rx, ang: 218 },
-    5: { cx: rx, ang: 142 },
-  }[seat]
-  const rad = (spec.ang * Math.PI) / 180
+function seatAngle(seat, count) {
+  const n = Math.max(count || 8, 3)
+  return ((90 - (seat * 360) / n) * Math.PI) / 180
+}
+
+function seatPos(seat, count) {
+  const rad = seatAngle(seat, count)
   return {
-    left: (spec.cx + rx * Math.cos(rad)) + '%',
-    top: (50 + 50 * Math.sin(rad)) + '%',
+    left: (50 + RING_X * Math.cos(rad)) + '%',
+    top: (50 + RING_Y * Math.sin(rad)) + '%',
     transform: 'translate(-50%, -50%)',
   }
 }
 
-function seatIsTop(seat) {
-  return seat === 2 || seat === 3 || seat === 4
+function seatIsTop(seat, count) {
+  return Math.sin(seatAngle(seat, count)) < 0
+}
+
+// The idle header lists whoever is actually seated, so adding or removing a bot
+// never leaves the copy behind.
+function lineupText(state) {
+  const players = (state && state.players) || []
+  const names = players
+    .filter(function (p) { return p.kind === 'ai' })
+    .map(function (p) { return p.name })
+  if (!names.length) return players.length + ' 人桌'
+  return players.length + ' 人桌 · ' + names.join(' / ')
 }
 
 function Identicon(props) {
@@ -369,8 +379,14 @@ const BRAND = {
   xai: { bg: '#111111', fg: '#fff' },
   deepseek: { bg: '#4d6bfe', fg: '#fff' },
   nvidia: { bg: '#74b71b', fg: '#fff' },
+  xiaomi: { bg: '#ff6900', fg: '#fff' },
+  bytedance: { bg: '#325ab4', fg: '#fff' },
   hero: { bg: '#3b82f6', fg: '#fff' },
 }
+
+// Brands we do not ship a logo for: the pill shows a lettering mark in the
+// brand colour instead of an svg path traced by hand.
+const LOBE_TEXT = { xiaomi: 'Mi', bytedance: '字' }
 
 const LOBE_ICON = {
   openai: 'M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z',
@@ -382,6 +398,13 @@ const LOBE_ICON = {
 
 function BrandMark(brand, size, color) {
   const d = LOBE_ICON[brand]
+  if (!d && LOBE_TEXT[brand]) {
+    return h('span', {
+      className: 'hk-brandtext',
+      style: { color: color || '#fff', fontSize: Math.round(size * 0.62) + 'px' },
+      'aria-hidden': 'true',
+    }, LOBE_TEXT[brand])
+  }
   if (!d) return null
   return h('svg', {
     width: size,
@@ -456,10 +479,10 @@ function chipBadges(p, maxRebuys) {
   ]
 }
 
-function seatView(p, thinkLabel, isWinner, maxRebuys) {
+function seatView(p, thinkLabel, isWinner, maxRebuys, seatCount) {
   const thinking = !!(p.isToAct && p.kind === 'ai')
   const statusText = thinking ? (thinkLabel || '思考中') : (p.talk || '')
-  const top = seatIsTop(p.seat)
+  const top = seatIsTop(p.seat, seatCount)
   const pill = h('div', { className: 'hk-pill' },
     h('div', { className: 'hk-avatar' }, h(PlayerMark, { player: p })),
     h('div', { className: 'hk-name' },
@@ -481,7 +504,7 @@ function seatView(p, thinkLabel, isWinner, maxRebuys) {
   return h('div', {
     key: p.id,
     className: 'hk-seat s' + p.seat + (top ? ' top' : '') + (p.isToAct ? ' toact' : '') + (p.folded ? ' folded' : '') + (isWinner ? ' winner' : ''),
-    style: seatPos(p.seat),
+    style: seatPos(p.seat, seatCount),
   },
     h('div', { className: 'hk-badge' }, holePair(p), pill, below),
     status,
@@ -716,7 +739,7 @@ function Table(props) {
                   holePair(hero),
                   h('span', { className: 'hk-c-handname' }, hero.folded ? '已弃牌' : (hero.handName || '')),
                 )
-              : h('div', { className: 'hk-c-hint' }, idle ? '五位玩家入座，每人只看得见自己的底牌' : '发牌中…'),
+              : h('div', { className: 'hk-c-hint' }, idle ? ((state.players || []).length + ' 位玩家入座，每人只看得见自己的底牌') : '发牌中…'),
             over && winnerLines.length
               ? h('div', { className: 'hk-c-winner' },
                   h('div', { className: 'hk-winner-h' }, '🏆 ' + winnerLines[0]),
@@ -740,7 +763,7 @@ function Table(props) {
       h('div', { className: 'hk-title' }, tr(props.t, 'title', 'No-Limit Inference')),
       h('div', { className: 'hk-meta' },
         idle
-          ? '六人桌 · Altman / 达里奥 / 马斯克 / 梁文峰 / 黄仁勋'
+          ? lineupText(state)
           : ('第 ' + state.handNo + ' 手 · ' + (STREET[state.street] || state.street) + (state.agentModel ? ' · ' + state.agentModel : '')),
       ),
       idle ? startBtn : null,
@@ -754,7 +777,7 @@ function Table(props) {
           h('div', { className: 'hk-board' },
             boardSlots.map(function (c, i) { return boardCard(c, i, boardOpts) }),
           ),
-          idle ? h('div', { className: 'hk-banner' }, '五位玩家入座。每人只能看见自己的底牌。') : null,
+          idle ? h('div', { className: 'hk-banner' }, ((state.players || []).length + ' 位玩家入座。每人只能看见自己的底牌。')) : null,
           ended
             ? h('div', { className: 'hk-banner hk-over-banner' },
                 '本局结束 · 你的 ' + (state.maxRebuys || 3) + ' 次买入已经用完，点 Reset 再开一桌。',
@@ -771,7 +794,7 @@ function Table(props) {
               )
             : null,
         ),
-        (state.players || []).map(function (p) { return seatView(p, thinkLabel, !!winnerSeats[p.seat], state.maxRebuys) }),
+        (state.players || []).map(function (p) { return seatView(p, thinkLabel, !!winnerSeats[p.seat], state.maxRebuys, (state.players || []).length) }),
       ),
       dock,
       ),

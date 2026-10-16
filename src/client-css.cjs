@@ -46,6 +46,7 @@ module.exports = `
 .hk-board{display:flex;gap:10px;min-height:100px;align-items:center;justify-content:center;perspective:640px}
 .hk-banner{max-width:360px;text-align:center;font-size:12px;line-height:1.45;color:var(--hk-text-3);background:var(--hk-surface);border:1px solid var(--hk-line-soft);border-radius:12px;padding:8px 12px}
 .hk-banner.hk-over-banner{color:var(--hk-win-fg);background:var(--hk-win-bg);border-color:var(--hk-win-line);font-weight:700;max-width:min(420px,86vw)}
+.hk-brandtext{font-weight:700;line-height:1;letter-spacing:-.02em}
 .hk-seat{position:absolute;width:168px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2;overflow:visible}
 .hk-seat.folded{opacity:.4}
 .hk-seat.s0 .hk-status,.hk-seat.top .hk-status{position:absolute;left:50%;top:calc(100% + 8px);bottom:auto;transform:translateX(-50%)}

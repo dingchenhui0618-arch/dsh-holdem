@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createTable } from '../src/host.js'
+import { AGENT_IDS } from '../src/avatars.js'
 
 function stubCtx() {
   return {
@@ -32,21 +33,29 @@ function withHome(fn) {
   }
 }
 
-const AGENTS = ['altman', 'dario', 'musk', 'liang', 'jensen']
+const AGENTS = AGENT_IDS
+// 雷军与张一鸣没有随包肖像（避免使用真人照片），默认落到标识头像，用户可上传覆盖。
+const PORTRAIT_IDS = ['altman', 'dario', 'musk', 'liang', 'jensen']
 
 test('you defaults to an identicon; agents default to shipped portraits', () => {
   withHome(function () {
     const table = createTable(stubCtx())
     const snap = table.snapshot()
-    assert.equal(snap.players.length, 6)
+    assert.equal(snap.players.length, AGENTS.length + 1)
     const hero = snap.players.find(function (p) { return p.id === 'hero' })
     assert.equal(hero.avatar.kind, 'identicon')
     assert.equal(hero.avatar.seed, 'hero')
     assert.equal(hero.avatar.src, '')
     for (const id of AGENTS) {
       const p = snap.players.find(function (row) { return row.id === id })
-      assert.equal(p.avatar.kind, 'default')
+      const shipped = PORTRAIT_IDS.indexOf(id) !== -1
+      assert.equal(p.avatar.kind, shipped ? 'default' : 'identicon')
       assert.equal(p.avatar.seed, id)
+      if (!shipped) {
+        assert.equal(p.avatar.src, '')
+        assert.equal(table.avatarFile(id), null)
+        continue
+      }
       assert.match(p.avatar.src, new RegExp('/dsh-poker-night/avatar/' + id))
       const file = table.avatarFile(id)
       assert.ok(file && file.bytes && file.bytes.length > 0)

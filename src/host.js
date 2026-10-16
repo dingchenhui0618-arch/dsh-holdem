@@ -29,6 +29,8 @@ const BOTS = [
   { id: 'musk', name: '马斯克', emoji: 'X', brand: 'xai', company: 'xAI', loose: 0.3, agg: 0.88, bluff: 0.36, tag: 'xAI', style: '你是 xAI 创始人埃隆·马斯克。疯子打法：尺度夸张、爱做大额施压、闲话短促带刺、偶尔乱诈；但只有牌力真的够强时才推光，不要每手都全下。' },
   { id: 'liang', name: '梁文峰', emoji: '梁', brand: 'deepseek', company: 'DeepSeek', loose: 0.16, agg: 0.72, bluff: 0.22, tag: 'DeepSeek', style: '你是 DeepSeek 创始人梁文峰。高效松凶，尺度多变，会突然加注，专吃软玩家。' },
   { id: 'jensen', name: '黄仁勋', emoji: '黄', brand: 'nvidia', company: 'NVIDIA', loose: 0.12, agg: 0.7, bluff: 0.12, tag: 'NVIDIA', style: '你是 NVIDIA 创始人黄仁勋。热情、持续施压、爱价值下注。闲话像发布会，但不提牌面。' },
+  { id: 'leijun', name: '雷军', emoji: '雷', brand: 'xiaomi', company: '小米', loose: 0.2, agg: 0.64, bluff: 0.18, tag: 'Xiaomi', style: '你是小米创始人雷军。亲和、节奏感强，爱用"厚道价"做价值下注，尺度克制，但关键牌会突然加注；闲话像发布会，热情、不提牌面。' },
+  { id: 'yiming', name: '张一鸣', emoji: '张', brand: 'bytedance', company: '字节跳动', loose: 0.06, agg: 0.52, bluff: 0.1, tag: 'ByteDance', style: '你是字节跳动创始人张一鸣。冷静、纪律极强、延迟满足：垃圾牌一律弃，只在期望为正时继续，很少诈唬，也不为情绪加注。' },
 ]
 
 const ACT_TOOL = {
