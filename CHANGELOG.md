@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-16
+
 ### 不兼容变更
 - 牌桌从六人改为八人（你 + 7 位智能体）。座位数由花名册派生，依赖固定 6 座的脚本或界面断言需要按 `players.length` 计算。
 - 插件更名：`dsh-holdem` → `dsh-poker-night`。包名、`cordis.patch.yml` 里的插件 id、牌局 API 前缀（`/dsh-holdem` → `/dsh-poker-night`）、会话 Cookie 名与 `localStorage` 键、头像数据目录（`$DSH_HOME/dsh-holdem/avatars` → `$DSH_HOME/dsh-poker-night/avatars`，首次运行自动搬运旧文件）都随之改变。升级方式：把 profile 里的旧包移除，再按新名重装。
@@ -79,6 +81,7 @@
 
 - 首次发布：六人无限注德州扑克插件，host 引擎 + client Tab。0.1.1 至 0.1.3 为发布当天的打包修补。
 
-[Unreleased]: https://github.com/dingchenhui0618-arch/dsh-poker-night/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/dingchenhui0618-arch/dsh-poker-night/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/dingchenhui0618-arch/dsh-poker-night/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bubbleptr/dsh-holdem/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bubbleptr/dsh-holdem/releases/tag/v0.3.0
